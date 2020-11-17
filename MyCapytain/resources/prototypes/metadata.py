@@ -8,6 +8,7 @@
 """
 
 from MyCapytain.common.metadata import Metadata
+from MyCapytain.common.reference import URN
 from MyCapytain.errors import UnknownCollection
 from MyCapytain.common.utils import literal_to_dict, Subgraph
 from MyCapytain.common.constants import RDF_NAMESPACES, RDFLIB_MAPPING, Mimetypes, get_graph
@@ -212,14 +213,28 @@ class Collection(Exportable):
         :param key: Key of the object to delete
         :return: Collection identified by the item
         """
+        # default
         if key == self.id:
             return self
-        for obj in self.members:
-            if key == obj.id:
-                return obj
-        for obj in self.descendants:
-            if obj.id == key:
-                return obj
+
+        # text group urn
+        if key in self.children:
+            return self.children[key]
+        urn = URN(key)
+        urn_len = len(urn)
+
+        # work urn
+        if urn_len == 4:
+            return self.children["default"] \
+                .textgroups[urn.upTo(URN.TEXTGROUP)] \
+                .works[key]
+
+        # text urn
+        if urn_len == 5:
+            return self.children["default"] \
+                .textgroups[urn.upTo(URN.TEXTGROUP)] \
+                .works[urn.upTo(URN.WORK)] \
+                .texts[key]
         raise UnknownCollection("%s is not part of this object" % key)
 
     def __delitem__(self, key):
