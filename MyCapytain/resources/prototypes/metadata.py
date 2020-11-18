@@ -207,6 +207,23 @@ class Collection(Exportable):
             self.children[member.id] = member
             #self.graph.add((self.asNode(), RDF_NAMESPACES.DTS.child, member.asNode()))
 
+    def get_object(self, key):
+        urn = URN(key)
+        urn_len = len(urn)
+        default_metadata = self.children.get("default", self)
+
+        if urn_len == 4:
+            return default_metadata \
+                .textgroups[urn.upTo(URN.TEXTGROUP)] \
+                .works.get(key)
+
+        # text urn
+        if urn_len == 5:
+            return default_metadata \
+                .textgroups[urn.upTo(URN.TEXTGROUP)] \
+                .works[urn.upTo(URN.WORK)] \
+                .texts[key]
+
     def __getitem__(self, key):
         """ Retrieve an item by its ID in the tree of a collection
 
@@ -220,21 +237,15 @@ class Collection(Exportable):
         # text group urn
         if key in self.children:
             return self.children[key]
-        urn = URN(key)
-        urn_len = len(urn)
 
-        # work urn
-        if urn_len == 4:
-            return self.children["default"] \
-                .textgroups[urn.upTo(URN.TEXTGROUP)] \
-                .works[key]
+        try:
+            obj = self.get_object(key)
+        except KeyError:
+            obj = None
 
-        # text urn
-        if urn_len == 5:
-            return self.children["default"] \
-                .textgroups[urn.upTo(URN.TEXTGROUP)] \
-                .works[urn.upTo(URN.WORK)] \
-                .texts[key]
+        if obj:
+            return obj
+
         raise UnknownCollection("%s is not part of this object" % key)
 
     def __delitem__(self, key):
