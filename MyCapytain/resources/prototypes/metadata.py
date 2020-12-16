@@ -212,6 +212,10 @@ class Collection(Exportable):
         urn_len = len(urn)
         default_metadata = self.children.get("default", self)
 
+        if urn_len == 3:
+            return default_metadata \
+                .textgroups[urn.upTo(URN.TEXTGROUP)]
+
         if urn_len == 4:
             return default_metadata \
                 .textgroups[urn.upTo(URN.TEXTGROUP)] \
@@ -230,14 +234,16 @@ class Collection(Exportable):
         :param key: Key of the object to delete
         :return: Collection identified by the item
         """
-        # default
+        # defaultTic
         if key == self.id:
             return self
 
-        # text group urn
+        # defaultTic.default
         if key in self.children:
             return self.children[key]
 
+        # this is where we actually resolve URNs, e.g.
+        # defaultTic.default.<urn>
         try:
             obj = self.get_object(key)
         except KeyError:
